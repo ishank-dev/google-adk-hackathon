@@ -9,7 +9,6 @@ from google.genai import types
 import asyncio
 from slack_sdk.errors import SlackApiError
 
-# ─── Define your tool & agent ─────────────────────────
 def get_message_tool(msg: str) -> dict:
     """Tool to handle specific user queries."""
     if not isinstance(msg, str):
@@ -38,7 +37,6 @@ root_agent = Agent(
     tools=[get_message_tool],
 )
 
-# ─── Initialize the session service and runner ─────────
 session_service = InMemorySessionService()
 runner = Runner(
     agent=root_agent,
