@@ -1,0 +1,14 @@
+# Remove all pycache and python compiled files
+# Python bytecode files
+__pycache__/
+*.py[cod]
+# Cython compiled files
+*.so
+# Distribution / packaging
+.Python
+# Installer logs
+pip-log.txt
+# Unit test / coverage reports
+coverage.xml
+# Translations
+*.mo
