@@ -77,14 +77,12 @@ def get_answer_sync(question: str, user_id: str, client) -> Dict[str, str]:
     return asyncio.run(get_answer(question, user_id, client))
 
 # Tool exposed to the ADK agent
-def get_answer_tool(question: str) -> Dict[str, str]:
-    # session_service ensures valid session; auth is handled upstream
+async def get_answer_tool(question: str) -> Dict[str, str]:
     try:
-        # retrieve user_id and client from context (captured in executor)
-        user_id = types.Part  # placeholder to satisfy type inference
-        return get_answer_sync(question, current_user, current_client)
+        # current_user / current_client already set in globals
+        return await get_answer(question, current_user, current_client)
     except NameError:
-        return {"status": "error", "error_message": "Authorization error: use this from Slack."}
+        return {"status": "error", "error_message": "Auth error: call me from Slack."}
 
 # Build the ADK agent
 root_agent = Agent(
@@ -146,7 +144,11 @@ async def handle_message(event, say):
     user_id = event.get("user")
     text = (event.get("text") or "").strip()
     channel_id = event.get("channel")
-
+    [identifier, command] = text.split(" ") if " " in text else (text, "")
+    if identifier != "ivk":
+        # Do nothing
+        return
+    text = command
     # create or fetch session
     try:
         session = await get_or_create_session(user_id)

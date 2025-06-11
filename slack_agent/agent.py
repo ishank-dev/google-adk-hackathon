@@ -83,36 +83,36 @@ async def run_in_executor(runner, user_id, session_id, content):
         return final_response
     return await loop.run_in_executor(None, sync_run)
 
-@app.event("message")
-async def handle_message(event, say):
-    """Handle incoming Slack messages asynchronously."""
-    user_id = event.get("user")
-    text = event.get("text", "").strip()
-    channel_id = event.get("channel")
+# @app.event("message")
+# async def handle_message(event, say):
+#     """Handle incoming Slack messages asynchronously."""
+#     user_id = event.get("user")
+#     text = event.get("text", "").strip()
+#     channel_id = event.get("channel")
 
-    # Skip if no user ID or text, or if it's a bot message
-    if not user_id or not text or event.get("bot_id"):
-        return
+#     # Skip if no user ID or text, or if it's a bot message
+#     if not user_id or not text or event.get("bot_id"):
+#         return
 
-    try:
-        session_id = await get_or_create_session(user_id)
-        content = types.Content(role="user", parts=[types.Part(text=text)])
+#     try:
+#         session_id = await get_or_create_session(user_id)
+#         content = types.Content(role="user", parts=[types.Part(text=text)])
 
-        # Run synchronous runner.run in an executor
-        final_response = await run_in_executor(runner, user_id, session_id, content)
+#         # Run synchronous runner.run in an executor
+#         final_response = await run_in_executor(runner, user_id, session_id, content)
         
-        # If the "clear" command is detected, delete messages
-        if text.lower().strip() == "clear":
-            auth_response = await app.client.auth_test()
-            bot_user_id = auth_response.get("user_id")
-            if not bot_user_id:
-                await say("Error: Could not retrieve bot user ID.")
-                return
-            delete_result = await delete_messages(channel_id, user_id, bot_user_id)
-            await say(f"{final_response} {delete_result}")
-        else:
-            await say(final_response)
+#         # If the "clear" command is detected, delete messages
+#         if text.lower().strip() == "clear":
+#             auth_response = await app.client.auth_test()
+#             bot_user_id = auth_response.get("user_id")
+#             if not bot_user_id:
+#                 await say("Error: Could not retrieve bot user ID.")
+#                 return
+#             delete_result = await delete_messages(channel_id, user_id, bot_user_id)
+#             await say(f"{final_response} {delete_result}")
+#         else:
+#             await say(final_response)
 
-    except Exception as e:
-        print(f"Error running agent: {e}")
-        await say("Sorry, I encountered an error processing your request.")
+#     except Exception as e:
+#         print(f"Error running agent: {e}")
+#         await say("Sorry, I encountered an error processing your request.")
