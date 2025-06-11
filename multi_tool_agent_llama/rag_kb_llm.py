@@ -56,7 +56,7 @@ chunks = text_splitter.split_documents(documents)
 print(f"Total number of chunks: {len(chunks)}")
 print(f"Document types found: {set(doc.metadata['doc_type'] for doc in documents)}")
 
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 

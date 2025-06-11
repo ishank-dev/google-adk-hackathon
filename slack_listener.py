@@ -1,4 +1,4 @@
-from slack_agent.agent import app
+from ticketing_agent.agent import app
 import os
 
 if __name__ == "__main__":
