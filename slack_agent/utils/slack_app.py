@@ -5,7 +5,7 @@ from slack_sdk.errors import SlackApiError
 
 
 app = AsyncApp(
-    token=env_config.slack_bot_user_oauth_token,
+    token=env_config.slack_bot_token,
     signing_secret=env_config.slack_signing_secret,
 )
 session_service = InMemorySessionService()

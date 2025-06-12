@@ -6,13 +6,60 @@ from fastapi import Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from ticketing_agent.agent import app as slack_bolt_app
 from google.adk.cli.fast_api import get_fast_api_app
-
+from ticketing_agent.modules.answers import get_answer
 app = get_fast_api_app(
     agents_dir="agents",    # where your `root_agent` modules live
     web=True,               # serve the UI at "/"
 )
 
 slack_handler = AsyncSlackRequestHandler(slack_bolt_app)
+
+# Add a simple command listener help_illa
+
+@slack_bolt_app.command("/ask_illa")
+async def handle_ask_illa(ack, body, respond):
+    import asyncio
+    await ack()                       
+    await respond(":hourglass: Working on it…")
+    asyncio.create_task(process_and_respond(body, slack_bolt_app.client))
+
+def _format_answer(answer: str, user_id: str, question: str, is_error: bool = False) -> str:
+    """
+    Format the answer to include user mention and question context.
+    """
+    if is_error:
+        return (
+            f"<@{user_id}> asked:\n> {question}\n\n"
+            f"Unfortunately, I couldn't find an answer for that. "
+            "But I have posted your question in the #faq channel for others to help out!"
+        )
+    return (
+        f"<@{user_id}> asked:\n> {question}\n\n"
+        f"Here's what I found:\n> {answer}. If this was helpful, feel free to upvote it! :thumbsup:\n\n"
+    )
+async def process_and_respond(body, client):
+    question     = body["text"]
+    user_id      = body["user_id"]
+    channel_id   = body["channel_id"]
+
+    llm_answer = await get_answer(
+        question=question,
+        user_id=user_id,
+        client=client
+    )
+    
+
+    if llm_answer["status"] == "error":
+        await client.chat_postMessage(
+            channel=channel_id,
+            text=_format_answer(llm_answer["error_message"], user_id, question, is_error=True)
+        )
+    else:
+        await client.chat_postMessage(
+            channel=channel_id,
+            text=_format_answer(llm_answer["message"], user_id, question)
+        )
+    
 
 @app.post("/slack/commands")
 async def slack_commands(request: Request):

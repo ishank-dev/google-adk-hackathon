@@ -19,7 +19,7 @@ class Config:
         self.slack_verification_token = os.environ.get('SLACK_VERIFICATION_TOKEN','')
         self.slack_auth_scope_token = os.environ.get('SLACK_AUTH_SCOPE_TOKEN','')
         self.slack_user_auth_token = os.environ.get('SLACK_USER_OAUTH_TOKEN','')
-        self.slack_bot_user_oauth_token = os.environ['SLACK_BOT_USER_OAUTH_TOKEN']
+        self.slack_bot_token = os.environ['SLACK_BOT_TOKEN']
         
         # Hugging Face configuration
         self.hf_token = os.environ['HF_TOKEN']
