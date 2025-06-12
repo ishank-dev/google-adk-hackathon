@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 from slack_agent.utils.llm import llm
+# from multi_tool_agent_llama.rag_kb_llm import chat
 from multi_tool_agent_llama.rag_kb_llm import chat
 import re
 # Fallback patterns for unknown answers
@@ -55,4 +56,5 @@ async def get_answer(question: str, user_id: str, client) -> Dict[str, str]:
             }
         return {"status": "success", "message": answer}
     except Exception as e:
+        print(f"Error processing question: {e}")
         return {"status": "error", "error_message": "Internal error, please try again later."}
