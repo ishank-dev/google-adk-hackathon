@@ -13,3 +13,8 @@ coverage.xml
 # Translations
 *.mo
 .env
+secrets/*
+gcp_creds.json
+venv/*
+.venv/*
+vector_db_llama/*

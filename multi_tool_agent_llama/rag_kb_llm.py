@@ -56,7 +56,7 @@ chunks = text_splitter.split_documents(documents)
 print(f"Total number of chunks: {len(chunks)}")
 print(f"Document types found: {set(doc.metadata['doc_type'] for doc in documents)}")
 
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 
@@ -84,16 +84,18 @@ doc_type_set = set(doc_types)  # Renamed variable to avoid conflict
 print(doc_type_set)
 colors = [['blue'][['team_a'].index(t)] for t in doc_types]
 
-llm = ChatOpenAI(temperature=0.7, model_name='llama3.2', base_url='http://localhost:11434/v1', api_key='ollama')
+def get_initials(llm = None):
+    if llm is None:
+        llm = ChatOpenAI(temperature=0.7, name='llama3.2', base_url='http://localhost:11434/v1', api_key='ollama')
+    retriever = vectorstore.as_retriever()
+    memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
+    conversation_chain = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever, memory=memory)
+    return conversation_chain
 
-memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
-retriever = vectorstore.as_retriever()
-conversation_chain = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever, memory=memory)
-memory = ConversationBufferMemory(memory_key='chat_history', return_messages=True)
-conversation_chain = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever, memory=memory)
 
 
-def chat(question: str, history=None):
+def chat(question: str, history=None, llm = None):
+    conversation_chain = get_initials(llm)
     if history is None:
         history = []                       # empty history for first turn
     result = conversation_chain.invoke(

@@ -23,7 +23,7 @@ root_agent = Agent(
         "For **every** user message (question, statement, anything):\n"
         "  1. Call chat_kb(question=<entire user message>).  \n"
         "  2. If status=='success', reply ONLY with the 'answer' text.\n"
-        "  3. If status=='error', apologise and show the error message.\n"
+        "  3. If status=='error', apologise saying 'an error occured' and show the error message.\n"
         "Do not reply in any other format."
     ),
     tools=[chat_kb],
