@@ -30,7 +30,7 @@ async def post_question_to_faq(client, faq_ch: str, question: str, user_id: str)
     resp = await client.chat_postMessage(
         channel=faq_ch,
         text=(
-            f":triangular_flag_on_post: <@{user_id}> asked:\n> {question}\n\n"
+            f":triangular_flag_on_post: {user_id} asked:\n> {question}\n\n"
             "_Helping hands, please reply in this thread if you’ve solved it!_"
         )
     )
