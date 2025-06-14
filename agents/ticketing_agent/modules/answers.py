@@ -1,7 +1,7 @@
 from typing import Dict, Optional
-from slack_agent.utils.llm import llm
+from agents.slack_agent.utils.llm import llm
 # from multi_tool_agent_llama.rag_kb_llm import chat
-from multi_tool_agent_llama.rag_kb_llm import chat
+from agents.multi_tool_agent_llama.rag_kb_llm import chat
 import re
 # Fallback patterns for unknown answers
 FALLBACK_PATTERNS = [

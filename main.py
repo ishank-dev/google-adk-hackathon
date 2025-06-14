@@ -5,9 +5,9 @@ import uvicorn
 import asyncio, shlex, argparse
 from fastapi import Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
-from ticketing_agent.agent import app as slack_bolt_app
+from agents.ticketing_agent.agent import app as slack_bolt_app
 from google.adk.cli.fast_api import get_fast_api_app
-from ticketing_agent.modules.answers import get_answer
+from agents.ticketing_agent.modules.answers import get_answer
 app = get_fast_api_app(
     agents_dir="agents",    # where your `root_agent` modules live
     web=True,               # serve the UI at "/"

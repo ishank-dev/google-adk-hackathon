@@ -7,14 +7,14 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.genai import types
-from slack_agent.utils.llm import llm
-from slack_agent.utils.slack_app import (
+from agents.slack_agent.utils.llm import llm
+from agents.slack_agent.utils.slack_app import (
     app,
     get_or_create_session,
     delete_messages,
     session_service
 )
-from ticketing_agent.modules.answers import get_answer
+from agents.ticketing_agent.modules.answers import get_answer
 
 
 # Synchronous wrapper (runs in separate thread)

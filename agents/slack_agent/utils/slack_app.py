@@ -1,5 +1,5 @@
 from slack_bolt.async_app import AsyncApp
-from slack_agent.utils.config import env_config
+from agents.slack_agent.utils.config import env_config
 from google.adk.sessions import InMemorySessionService
 from slack_sdk.errors import SlackApiError
 
