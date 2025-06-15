@@ -86,6 +86,7 @@ async def run_in_executor(
 # Slack event handler
 @app.event("message")
 async def handle_message(event, say):
+    return
     user_id = event.get("user")
     text = (event.get("text") or "").strip()
     channel_id = event.get("channel")
