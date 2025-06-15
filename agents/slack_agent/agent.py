@@ -5,7 +5,7 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 import asyncio
-from slack_agent.utils.slack_app import app, get_or_create_session, delete_messages
+from agents.slack_agent.utils.slack_app import app, get_or_create_session, delete_messages
 
 def get_message_tool(msg: str) -> dict:
     """Tool to handle specific user queries."""
