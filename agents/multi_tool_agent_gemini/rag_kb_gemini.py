@@ -132,30 +132,136 @@ class GeminiFAQSystem:
             logger.error(f"❌ Failed to setup corpus: {str(e)}")
             raise
     
+    def _get_existing_file_hashes(self) -> Dict[str, str]:
+        """
+        Get hashes of existing files from GCS blob metadata.
+        Returns dict mapping hash -> filename for deduplication.
+        """
+        existing_files = {}
+        
+        try:
+            if self.storage_client:
+                bucket = self.storage_client.bucket(self.storage_bucket)
+                blobs = bucket.list_blobs(prefix=f"{self.corpus_name}/")
+                
+                for blob in blobs:
+                    # Reload blob to get metadata
+                    blob.reload()
+                    if blob.metadata and "file_hash" in blob.metadata:
+                        file_hash = blob.metadata["file_hash"]
+                        filename = blob.name.replace(f"{self.corpus_name}/", "")
+                        existing_files[file_hash] = filename
+                    else:
+                        # For existing files without metadata, calculate hash from filename + size
+                        # This is a fallback for files uploaded before implementing hash tracking
+                        fallback_hash = hashlib.sha256(f"{blob.name}_{blob.size}".encode()).hexdigest()
+                        filename = blob.name.replace(f"{self.corpus_name}/", "")
+                        existing_files[fallback_hash] = filename
+                        logger.debug(f"📝 Using fallback hash for existing file: {filename}")
+                        
+        except Exception as e:
+            logger.warning(f"⚠️ Could not retrieve existing file hashes from GCS: {str(e)}")
+        
+        return existing_files
+
     def _calculate_file_hash(self, file_path: str) -> str:
         """Calculate SHA-256 hash of a file for deduplication."""
         hash_sha256 = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
-        return hash_sha256.hexdigest()
-    
-    def _get_existing_file_hashes(self) -> Dict[str, str]:
-        """Get hashes of existing files in the corpus."""
-        existing_files = {}
+        try:
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            return hash_sha256.hexdigest()
+        except Exception as e:
+            logger.error(f"❌ Failed to calculate hash for {file_path}: {str(e)}")
+            # Return a fallback hash based on filename and modification time
+            import time
+            fallback_string = f"{file_path}_{os.path.getmtime(file_path)}"
+            return hashlib.sha256(fallback_string.encode()).hexdigest()
+
+    def rebuild_hash_metadata(self, documents_path: str) -> Dict[str, int]:
+        """
+        Rebuild hash metadata for existing GCS files by matching with local files.
+        Useful when upgrading to the hash-based deduplication system.
+        """
+        stats = {"updated": 0, "matched": 0, "failed": 0}
+        
+        try:
+            if not self.storage_client:
+                logger.error("❌ Storage client not initialized")
+                return stats
+                
+            bucket = self.storage_client.bucket(self.storage_bucket)
+            blobs = list(bucket.list_blobs(prefix=f"{self.corpus_name}/"))
+            
+            # Get all local files
+            local_files = {}
+            docs_path = Path(documents_path)
+            for file_path in docs_path.rglob("*"):
+                if file_path.is_file():
+                    rel_path = file_path.relative_to(docs_path).as_posix()
+                    local_files[rel_path] = file_path
+            
+            for blob in blobs:
+                try:
+                    filename = blob.name.replace(f"{self.corpus_name}/", "")
+                    
+                    # Skip if already has hash metadata
+                    blob.reload()
+                    if blob.metadata and "file_hash" in blob.metadata:
+                        stats["matched"] += 1
+                        continue
+                    
+                    # Find matching local file
+                    if filename in local_files:
+                        local_file_hash = self._calculate_file_hash(str(local_files[filename]))
+                        
+                        # Update blob metadata
+                        if not blob.metadata:
+                            blob.metadata = {}
+                        blob.metadata["file_hash"] = local_file_hash
+                        blob.patch()
+                        
+                        stats["updated"] += 1
+                        logger.info(f"✅ Updated hash for: {filename}")
+                    else:
+                        logger.warning(f"⚠️ No local file found for: {filename}")
+                        
+                except Exception as e:
+                    logger.error(f"❌ Failed to update hash for {blob.name}: {str(e)}")
+                    stats["failed"] += 1
+                    
+        except Exception as e:
+            logger.error(f"❌ Failed to rebuild hash metadata: {str(e)}")
+            
+        logger.info(f"📊 Hash metadata rebuild complete: {stats}")
+        return stats
+
+    def clear_corpus_files(self) -> Dict[str, int]:
+        """
+        Remove all files from the corpus (useful for testing or cleanup).
+        Returns stats about deletion.
+        """
+        stats = {"deleted": 0, "failed": 0}
+        
         try:
             files = list(rag.list_files(corpus_name=self._get_safe_corpus_metadata()['corpus_name']))
+            
             for file in files:
-                # Store mapping of file hash to file name
-                if hasattr(file, 'description') and file.description:
-                    # Extract hash from description if stored
-                    if file.description.startswith("hash:"):
-                        hash_value = file.description.replace("hash:", "")
-                        existing_files[hash_value] = file.display_name
+                try:
+                    rag.delete_file(name=file.name)
+                    stats["deleted"] += 1
+                    logger.info(f"🗑️ Deleted: {file.display_name}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to delete {file.display_name}: {str(e)}")
+                    stats["failed"] += 1
+                    
         except Exception as e:
-            logger.warning(f"⚠️ Could not retrieve existing file hashes: {str(e)}")
-        
-        return existing_files
+            logger.error(f"❌ Failed to list files for deletion: {str(e)}")
+            
+        logger.info(f"📊 Deletion complete: {stats}")
+        return stats
+
     def _get_safe_corpus_metadata(self) -> Dict[str, str]:
         """Get safe metadata for the corpus."""
         assert self.corpus is not None, "Corpus must be initialized before getting metadata"
@@ -173,12 +279,19 @@ class GeminiFAQSystem:
             return {"error": str(e)}
     
     def update(self,
-           documents_path: str,
-           file_extensions: List[str] = [".md", ".txt", ".pdf"],
-           batch_size: int = 10) -> Dict[str, int]:
+            documents_path: str,
+            file_extensions: List[str] = [".md", ".txt", ".pdf"],
+            batch_size: int = 10) -> Dict[str, int]:
+        """
+        Update the RAG corpus with documents, using hash-based deduplication.
+        """
         stats = {"uploaded": 0, "skipped": 0, "failed": 0}
         assert self.storage_client is not None, "Storage client must be initialized"
         bucket = self.storage_client.bucket(self.storage_bucket)
+
+        # Get existing file hashes for deduplication
+        existing_hashes = self._get_existing_file_hashes()
+        logger.info(f"📋 Found {len(existing_hashes)} existing files in corpus")
 
         # Gather all files matching extensions
         docs = []
@@ -192,25 +305,44 @@ class GeminiFAQSystem:
             for doc in docs[i : i + batch_size]:
                 try:
                     rel_path = doc.relative_to(documents_path).as_posix()
+                    
+                    # Calculate file hash for deduplication
+                    file_hash = self._calculate_file_hash(str(doc))
+                    
+                    # Check if file already exists (by hash)
+                    if file_hash in existing_hashes:
+                        logger.info(f"⏭️ Skipped (duplicate): {rel_path}")
+                        stats["skipped"] += 1
+                        continue
+                    
                     gcs_path = f"{self.corpus_name}/{rel_path}"
-                    gs_uri    = f"gs://gzb-products.appspot.com/{gcs_path}"
+                    gs_uri = f"gs://{self.storage_bucket}/{gcs_path}"
 
-                    # 1️⃣ upload to GCS
-                    bucket.blob(gcs_path).upload_from_filename(str(doc))
+                    # 1️⃣ Upload to GCS
+                    blob = bucket.blob(gcs_path)
+                    blob.upload_from_filename(str(doc))
+                    
+                    # Store hash in blob metadata for future deduplication
+                    blob.metadata = {"file_hash": file_hash}
+                    blob.patch()
 
-                    # 2️⃣ import into your RAG corpus
+                    # 2️⃣ Import into RAG corpus
                     rag.import_files(
                         self._get_safe_corpus_metadata()['corpus_name'],
                         paths=[gs_uri],
                         transformation_config=rag.TransformationConfig(
                             chunking_config=rag.ChunkingConfig(
-                                chunk_size=512, chunk_overlap=100
+                                chunk_size=512, 
+                                chunk_overlap=100
                             )
-                        ),
+                        )
                     )
 
-                    logger.info(f"✅ Imported: {rel_path}")
+                    logger.info(f"✅ Imported: {rel_path} (hash: {file_hash[:8]}...)")
                     stats["uploaded"] += 1
+                    
+                    # Add to existing hashes to prevent duplicates in same batch
+                    existing_hashes[file_hash] = rel_path
 
                 except Exception as e:
                     logger.error(f"❌ {doc.name} → {e}")
@@ -223,32 +355,67 @@ class GeminiFAQSystem:
     def _retrieve_contexts(self, query: str, max_contexts: int = 5) -> List[str]:
         """Retrieve relevant contexts from the RAG corpus."""
         try:
+            # Use v1beta1 API version (not v1)
             parent = f"projects/{self.project_id}/locations/{self.location}"
-            endpoint = f"https://{self.location}-aiplatform.googleapis.com/v1/{parent}:retrieveContexts"
+            endpoint = f"https://{self.location}-aiplatform.googleapis.com/v1beta1/{parent}:retrieveContexts"
             
+            # Correct request body format based on the latest API docs
             body = {
-                "vertexRagStore": {
-                    "ragResources": [{"ragCorpus": self._get_safe_corpus_metadata()['corpus_name']}]
+                "vertex_rag_store": {  # Note: underscore, not camelCase
+                    "rag_resources": [  # This should be an array
+                        {
+                            "rag_corpus": self._get_safe_corpus_metadata()['corpus_name']
+                        }
+                    ]
                 },
-                "query": {"text": query},
-                "similarityTopK": max_contexts
+                "query": {
+                    "text": query,
+                    "similarity_top_k": max_contexts  # This should be inside query object
+                }
             }
+            
             assert self.authed_session is not None, "Authorized session must be initialized"
             response = self.authed_session.post(endpoint, json=body)
-            response.raise_for_status()
+            
+            # Debug logging to help troubleshoot
+            if response.status_code != 200:
+                logger.error(f"❌ API Error {response.status_code}: {response.text}")
+                logger.error(f"Request body was: {json.dumps(body, indent=2)}")
+                response.raise_for_status()
+                
             data = response.json()
+            logger.debug(f"📥 Retrieved response: {json.dumps(data, indent=2)}")
             
-            # Extract contexts
+            # Extract contexts from the response
             contexts = []
-            for ctx in data.get("contexts", {}).get("contexts", []):
-                text = ctx.get("text") or ctx.get("content") or ""
-                if text.strip():
-                    contexts.append(text.strip())
             
+            # Check if the response structure matches expected format
+            if "contexts" in data:
+                if "contexts" in data["contexts"]:
+                    # Nested structure: {"contexts": {"contexts": [...]}}
+                    context_list = data["contexts"]["contexts"]
+                else:
+                    # Direct structure: {"contexts": [...]}
+                    context_list = data["contexts"]
+                    
+                for ctx in context_list:
+                    # Try different possible field names for the text content
+                    text = (ctx.get("text") or 
+                            ctx.get("content") or 
+                            ctx.get("source_uri", ""))
+                    
+                    if text and text.strip():
+                        contexts.append(text.strip())
+            
+            logger.info(f"📚 Retrieved {len(contexts)} contexts for query: '{query[:50]}...'")
             return contexts
             
         except Exception as e:
             logger.error(f"❌ Failed to retrieve contexts: {str(e)}")
+            # If it's a requests error, log more details
+            if hasattr(e, 'response'):
+                logger.error(f"Response status: {e.response.status_code}") # type: ignore
+                logger.error(f"Response body: {e.response.text}") # type: ignore
             return []
     
     def answer(self, 
@@ -277,14 +444,15 @@ class GeminiFAQSystem:
             
             # Build prompt
             if system_prompt is None:
-                system_prompt = """You are a helpful AI assistant that answers questions based on provided knowledge base sources. 
-
-Instructions:
-- Use only the information provided in the sources below
-- If the answer is not in the sources, say so clearly
-- Cite sources using [Source X] format
-- Be concise but comprehensive
-- If multiple sources conflict, mention the discrepancy"""
+                system_prompt = """
+                You are a helpful AI assistant that answers questions based on provided knowledge base sources. 
+                Instructions:
+                - Use only the information provided in the sources below
+                - If the answer is not in the sources, say so clearly
+                - Cite sources using [Source X] format
+                - Be concise but comprehensive
+                - If multiple sources conflict, mention the discrepancy
+                """
 
             prompt = f"{system_prompt}\n\n"
             
