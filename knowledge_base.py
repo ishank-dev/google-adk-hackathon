@@ -15,7 +15,8 @@ if __name__ == "__main__":
             project_id=PROJECT_ID,
             location=LOCATION,
             service_account_path=SERVICE_ACCOUNT_PATH,
-            corpus_name="FAQ-Knowledge-Base"
+            corpus_name="FAQ-Knowledge-Base",
+            gcs_bucket=env_config.google_storage_bucket,
         )
         
         print("🎉 FAQ System initialized successfully!")

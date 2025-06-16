@@ -13,6 +13,7 @@ class Config:
         self.google_project_id = os.environ['GOOGLE_PROJECT_ID']
         self.google_location = os.environ.get('GOOGLE_LOCATION', 'us-central1')
         self.google_credentials_path = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+        self.google_storage_bucket = os.environ['GOOGLE_STORAGE_BUCKET']
         
         # Slack configuration
         self.slack_app_id = os.environ.get('SLACK_APP_ID','')

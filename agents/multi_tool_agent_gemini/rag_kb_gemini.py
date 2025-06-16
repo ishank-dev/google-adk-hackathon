@@ -41,6 +41,7 @@ class GeminiFAQSystem:
                  project_id: str,
                  location: str = "us-central1",
                  service_account_path: Optional[str] = None,
+                 gcs_bucket: Optional[str] = None,
                  corpus_name: str = "FAQ-Knowledge-Base"):
         """
         Initialize the Gemini FAQ System.
@@ -57,6 +58,7 @@ class GeminiFAQSystem:
         self.corpus = None
         self.storage_client = None
         self.authed_session = None
+        self.storage_bucket = gcs_bucket or f"{project_id}-rag-corpus-bucket"
         
         # Initialize credentials with explicit scopes (CRITICAL for service accounts)
         if service_account_path and os.path.exists(service_account_path):
@@ -64,14 +66,13 @@ class GeminiFAQSystem:
                 service_account_path,
                 scopes=[
                     "https://www.googleapis.com/auth/cloud-platform",
-                    "https://www.googleapis.com/auth/devstorage.read_write"
-                    ]
+                    "https://www.googleapis.com/auth/devstorage.read_write",
+                ]
             )
         else:
-            # Use Application Default Credentials with explicit scopes
+            # ADC already have cloud-platform by default
             from google.auth import default
-            self.credentials, _ = default(scopes=scopes)
-            logger.info("Using Application Default Credentials with explicit scopes")
+            self.credentials, _ = default()
         
         self._initialize_clients()
         self._setup_corpus()
@@ -171,78 +172,53 @@ class GeminiFAQSystem:
             logger.error(f"❌ Failed to get corpus metadata: {str(e)}")
             return {"error": str(e)}
     
-    def update(self, 
-               documents_path: str,
-               file_extensions: List[str] = [".md", ".txt", ".pdf"],
-               batch_size: int = 10) -> Dict[str, int]:
-        """
-        Update the knowledge base with new documents.
-        
-        Args:
-            documents_path: Path to directory containing documents
-            file_extensions: List of file extensions to process
-            batch_size: Number of files to process in each batch
-            
-        Returns:
-            Dictionary with upload statistics
-        """
+    def update(self,
+           documents_path: str,
+           file_extensions: List[str] = [".md", ".txt", ".pdf"],
+           batch_size: int = 10) -> Dict[str, int]:
         stats = {"uploaded": 0, "skipped": 0, "failed": 0}
-        
-        try:
-            # Get existing file hashes for deduplication
-            existing_hashes = self._get_existing_file_hashes()
-            
-            # Find all documents to process
-            documents_to_process = []
-            for ext in file_extensions:
-                pattern = f"**/*{ext}"
-                documents_to_process.extend(Path(documents_path).glob(pattern))
-            
-            if not documents_to_process:
-                logger.warning(f"⚠️ No documents found in {documents_path}")
-                return stats
-            
-            logger.info(f"📄 Found {len(documents_to_process)} documents to process")
-            
-            # Process documents in batches
-            for i in range(0, len(documents_to_process), batch_size):
-                batch = documents_to_process[i:i + batch_size]
-                
-                for doc_path in batch:
-                    try:
-                        # Calculate file hash for deduplication
-                        file_hash = self._calculate_file_hash(str(doc_path))
-                        
-                        if file_hash in existing_hashes:
-                            logger.info(f"⏭️ Skipping duplicate: {doc_path.name}")
-                            stats["skipped"] += 1
-                            continue
-                        
-                        # Upload new document
-                        relative_path = doc_path.relative_to(documents_path)
-                        display_name = str(relative_path)
-                        description = f"hash:{file_hash}"
-                        
-                        rag.upload_file(
-                            corpus_name=self._get_safe_corpus_metadata()['corpus_name'],
-                            path=str(doc_path),
-                            display_name=display_name,
-                            description=description
-                        )
-                        
-                        logger.info(f"✅ Uploaded: {display_name}")
-                        stats["uploaded"] += 1
-                        
-                    except Exception as e:
-                        logger.error(f"❌ Failed to upload {doc_path}: {str(e)}")
-                        stats["failed"] += 1
-            
-            logger.info(f"📊 Upload complete: {stats}")
+        assert self.storage_client is not None, "Storage client must be initialized"
+        bucket = self.storage_client.bucket(self.storage_bucket)
+
+        # Gather all files matching extensions
+        docs = []
+        for ext in file_extensions:
+            docs.extend(Path(documents_path).rglob(f"*{ext}"))
+        if not docs:
+            logger.warning(f"⚠️ No docs found in {documents_path}")
             return stats
-            
-        except Exception as e:
-            logger.error(f"❌ Update failed: {str(e)}")
-            raise
+
+        for i in range(0, len(docs), batch_size):
+            for doc in docs[i : i + batch_size]:
+                try:
+                    rel_path = doc.relative_to(documents_path).as_posix()
+                    gcs_path = f"{self.corpus_name}/{rel_path}"
+                    gs_uri    = f"gs://gzb-products.appspot.com/{gcs_path}"
+
+                    # 1️⃣ upload to GCS
+                    bucket.blob(gcs_path).upload_from_filename(str(doc))
+
+                    # 2️⃣ import into your RAG corpus
+                    rag.import_files(
+                        self._get_safe_corpus_metadata()['corpus_name'],
+                        paths=[gs_uri],
+                        transformation_config=rag.TransformationConfig(
+                            chunking_config=rag.ChunkingConfig(
+                                chunk_size=512, chunk_overlap=100
+                            )
+                        ),
+                    )
+
+                    logger.info(f"✅ Imported: {rel_path}")
+                    stats["uploaded"] += 1
+
+                except Exception as e:
+                    logger.error(f"❌ {doc.name} → {e}")
+                    stats["failed"] += 1
+
+        logger.info(f"📊 Update done: {stats}")
+        return stats
+
     
     def _retrieve_contexts(self, query: str, max_contexts: int = 5) -> List[str]:
         """Retrieve relevant contexts from the RAG corpus."""
