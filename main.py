@@ -9,7 +9,7 @@ from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
 from agents.ticketing_agent.agent import app as slack_bolt_app
 from google.adk.cli.fast_api import get_fast_api_app
 from agents.ticketing_agent.modules.answers import get_answer
-from agents.ticketing_agent.modules.document_manager import add_to_document, get_document_stats
+from agents.ticketing_agent.modules.qna_utils import add_to_document, get_document_stats
 
 app = get_fast_api_app(
     agents_dir="agents",    # where your `root_agent` modules live

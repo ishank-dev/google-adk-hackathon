@@ -1,4 +1,4 @@
-# agents/ticketing_agent/modules/document_manager.py
+# agents/ticketing_agent/modules/qna_utils.py
 
 import os
 import tempfile
@@ -16,7 +16,6 @@ from agents.slack_agent.utils.llm import llm
 from agents.multi_tool_agent_llama.rag_kb_llm import chat, vectorstore
 
 
-# Relevance checking prompts
 RELEVANCE_PROMPT = """
 You are an expert content curator for a knowledge base. Your task is to determine if the given content is relevant and valuable for a company's internal knowledge base.
 
@@ -62,7 +61,6 @@ async def check_content_relevance(content: str, title: str | None = None, catego
         
         response = chat(prompt, llm=llm)
         
-        # Try to parse JSON response
         import json
         try:
             result = json.loads(response)
@@ -105,7 +103,6 @@ def add_document_to_vectorstore(content: str, title: str, category: str, user_id
     Add a document to the vector database.
     """
     try:
-        # Create document with metadata
         timestamp = datetime.now().isoformat()
         doc_id = str(uuid.uuid4())
         
@@ -121,11 +118,9 @@ def add_document_to_vectorstore(content: str, title: str, category: str, user_id
         
         document = Document(page_content=content, metadata=metadata)
         
-        # Split document into chunks
         text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = text_splitter.split_documents([document])
         
-        # Add to vector store
         vectorstore.add_documents(chunks)
         
         return {
@@ -153,14 +148,12 @@ async def add_to_document(
     Main function to add content to the knowledge base with relevance checking.
     """
     try:
-        # Set defaults
         if not title:
             title = f"Document added by {user_id or 'unknown'} on {datetime.now().strftime('%Y-%m-%d')}"
         
         if not category:
             category = "general"
         
-        # Check relevance unless forced
         if not force_add:
             relevance_result = await check_content_relevance(content, title, category)
             
@@ -173,14 +166,12 @@ async def add_to_document(
                     "suggested_category": relevance_result["suggested_category"]
                 }
             
-            # Use suggested improvements if available
             title = relevance_result["suggested_title"] or title
             category = relevance_result["suggested_category"] or category
             relevance_score = relevance_result["score"]
         else:
             relevance_score = "Forced (skipped check)"
         
-        # Add to vector store
         add_result = add_document_to_vectorstore(content, title, category, user_id or 'unknown_user', context_info)
         
         if add_result["status"] == "success":
@@ -213,17 +204,14 @@ def get_document_stats() -> Dict:
         collection = vectorstore._collection
         count = collection.count()
         
-        # Handle empty collection
         if count == 0:
             return {
                 "total_documents": 0,
                 "document_types": {}
             }
         
-        # Get document types - ChromaDB uses 'metadatas' (plural) in the API
         result = collection.get(include=['metadatas'])
         
-        # Check if result is None or empty
         if not result or 'metadatas' not in result or not result['metadatas']:
             return {
                 "total_documents": count,
@@ -232,7 +220,6 @@ def get_document_stats() -> Dict:
         
         doc_types = {}
         for metadata in result['metadatas']:
-            # metadata could be None in some cases
             if metadata is None:
                 doc_type = 'unknown'
             else:
