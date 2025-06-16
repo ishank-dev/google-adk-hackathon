@@ -1,11 +1,7 @@
 # agents/ticketing_agent/modules/qna_utils.py
-
-import os
-import tempfile
+from typing import Dict
 import uuid
 from datetime import datetime
-from typing import Dict, Optional
-from pathlib import Path
 
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
