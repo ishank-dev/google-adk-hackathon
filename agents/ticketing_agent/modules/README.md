@@ -1,21 +1,21 @@
-# Illa Bot - Knowledge Base Commands Usage Guide
+# Ella Bot - Knowledge Base Commands Usage Guide
 
 ## Overview
 
-The Illa bot provides intelligent document management for your Slack workspace, allowing you to save conversations, notes, and documentation directly to a searchable knowledge base.
+The Ella bot provides intelligent document management for your Slack workspace, allowing you to save conversations, notes, and documentation directly to a searchable knowledge base.
 
 ---
 
 ## 🔍 **Query Commands**
 
-### `/ask_illa` - Ask Questions
+### `/ask_ella` - Ask Questions
 
 Query the knowledge base for information.
 
 **Syntax:**
 
 ```
-/ask_illa [--anonymous|-a] <your question>
+/ask_ella [--anonymous|-a] <your question>
 ```
 
 **Options:**
@@ -25,9 +25,9 @@ Query the knowledge base for information.
 **Examples:**
 
 ```bash
-/ask_illa How do we deploy to production?
-/ask_illa -a What's our vacation policy?
-/ask_illa --anonymous Who should I contact for IT issues?
+/ask_ella How do we deploy to production?
+/ask_ella -a What's our vacation policy?
+/ask_ella --anonymous Who should I contact for IT issues?
 ```
 
 ---
@@ -67,14 +67,14 @@ Add content directly via slash command (works in channels, not threads).
 
 ## 💬 **Thread-Based Commands**
 
-### `@Illa add_doc` - Capture Thread Conversations
+### `@ella add_doc` - Capture Thread Conversations
 
 Save entire thread conversations to the knowledge base (works everywhere).
 
 **Syntax:**
 
 ```
-@Illa add_doc [title="..."] [category="..."] [force] <optional additional context>
+@ella add_doc [title="..."] [category="..."] [force] <optional additional context>
 ```
 
 **Options:**
@@ -86,10 +86,10 @@ Save entire thread conversations to the knowledge base (works everywhere).
 
 **Alternative Commands:**
 
-- `@Illa add-doc`
-- `@Illa adddoc`
-- `@Illa save_thread`
-- `@Illa save-thread`
+- `@ella add-doc`
+- `@ella adddoc`
+- `@ella save_thread`
+- `@ella save-thread`
 
 **Examples:**
 
@@ -97,7 +97,7 @@ Save entire thread conversations to the knowledge base (works everywhere).
 
 ```
 [In a thread about deployment issues]
-@Illa add_doc title="Deployment Troubleshooting" category="processes"
+@ella add_doc title="Deployment Troubleshooting" category="processes"
 ```
 
 _Captures the entire thread conversation with the specified title and category._
@@ -106,7 +106,7 @@ _Captures the entire thread conversation with the specified title and category._
 
 ```
 [In a thread about API changes]
-@Illa add_doc title="API v2 Migration" category="documentation" This thread covers all the breaking changes we need to document for the v2 release
+@ella add_doc title="API v2 Migration" category="documentation" This thread covers all the breaking changes we need to document for the v2 release
 ```
 
 _Captures thread + adds extra context._
@@ -115,7 +115,7 @@ _Captures thread + adds extra context._
 
 ```
 [Any thread]
-@Illa add_doc force title="Meeting Notes" category="meetings"
+@ella add_doc force title="Meeting Notes" category="meetings"
 ```
 
 _Skips AI relevance checking and saves regardless of content quality._
@@ -123,7 +123,7 @@ _Skips AI relevance checking and saves regardless of content quality._
 #### Standalone Mention
 
 ```
-@Illa add_doc title="Quick Reminder" category="notes" Don't forget to backup the database before the weekend
+@ella add_doc title="Quick Reminder" category="notes" Don't forget to backup the database before the weekend
 ```
 
 _Saves just the provided text (no thread context)._
@@ -230,10 +230,10 @@ Use the `force` option when:
 
 ### **Command Not Working?**
 
-1. Make sure you're mentioning the bot correctly: `@Illa`
+1. Make sure you're mentioning the bot correctly: `@ella`
 2. Check command spelling: `add_doc` (with underscore)
 3. Use quotes around titles/categories: `title="My Title"`
-4. Try the test command: `@Illa test`
+4. Try the test command: `@ella test`
 
 ### **No Response?**
 
@@ -255,14 +255,14 @@ Use the `force` option when:
 
 ```
 [Thread: "Production deployment failed, here's how we fixed it..."]
-@Illa add_doc title="Production Deployment Fix - Database Migration Issue" category="troubleshooting" This thread contains the complete solution for the migration timeout problem we encountered on 2025-06-15
+@ella add_doc title="Production Deployment Fix - Database Migration Issue" category="troubleshooting" This thread contains the complete solution for the migration timeout problem we encountered on 2025-06-15
 ```
 
 ### **Documenting a New Process**
 
 ```
 [Thread: Team discussing new code review process]
-@Illa save_thread title="New Code Review Process v2" category="processes"
+@ella save_thread title="New Code Review Process v2" category="processes"
 ```
 
 ### **Quick Note Addition**
@@ -275,7 +275,7 @@ Use the `force` option when:
 
 ```
 [Thread: Discussion about choosing new framework]
-@Illa add_doc title="Framework Decision - React vs Vue" category="meetings" Final decision and reasoning from today's architecture meeting
+@ella add_doc title="Framework Decision - React vs Vue" category="meetings" Final decision and reasoning from today's architecture meeting
 ```
 
 ---
