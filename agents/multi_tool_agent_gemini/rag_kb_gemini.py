@@ -844,7 +844,7 @@ Answer:"""
                             "max_output_tokens": 1024,
                         }
                     )
-                    return f"I couldn't find relevant information in our knowledge base to answer your question. Here's what I can tell you based on my general knowledge:\n\n{response.text}"
+                    return f"I couldn't find relevant information in our knowledge base to answer your question. Here's what I can tell you based on my general knowledge: {response.text}"
                 else:
                     return "I couldn't find relevant information to answer your question. Please try rephrasing or check if the knowledge base contains information about this topic."
             
