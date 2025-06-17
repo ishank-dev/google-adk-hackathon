@@ -508,7 +508,6 @@ async def process_and_respond(body, client):
         client=client
     )
     
-    print(f"LLM answer: {llm_answer}")
     
     if llm_answer["status"] == "error":
         await client.chat_postMessage(
