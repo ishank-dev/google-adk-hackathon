@@ -108,6 +108,19 @@ async def handle_app_mention(event, client):
         timestamp=message_ts,
         name="hourglass_flowing_sand"
     )
+    if "testing_ella" in text.lower():
+        await client.chat_postMessage(
+            channel=channel_id,
+            thread_ts=thread_ts or message_ts,
+            text="🤖 I can hear you! App mentions are working."
+        )
+        return
+    
+    # Check if this is an add_doc command
+    is_add_doc = _is_add_doc_command(text)
+    
+    if not is_add_doc:
+        return  # Not our command, let other handlers deal with it
     
     try:
         # Check if this is a number command
@@ -128,11 +141,14 @@ async def handle_app_mention(event, client):
             )
             
             # Remove hourglass reaction
-            await client.reactions_remove(
-                channel=channel_id,
-                timestamp=message_ts,
-                name="hourglass_flowing_sand"
-            )
+            try:
+                await client.reactions_remove(
+                    channel=channel_id,
+                    timestamp=message_ts,
+                    name="hourglass_flowing_sand"
+                )
+            except:
+                pass
             
             if result["status"] == "success":
                 await client.reactions_add(
@@ -316,7 +332,7 @@ def _parse_add_doc_command(text: str, user_id: str) -> Dict:
             additional_context = additional_context.replace(category_match.group(0), '').strip()
         
         # Check for force flag
-        if re.search(r'\bforce\b', cleaned_text, re.IGNORECASE):
+        if re.search(r'--force\b', cleaned_text, re.IGNORECASE):
             force = True
             additional_context = re.sub(r'\bforce\b', '', additional_context, flags=re.IGNORECASE).strip()
         
@@ -578,6 +594,7 @@ async def process_and_respond(body, client):
         user_id=user_id,
         client=client
     )
+    
     
     if llm_answer["status"] == "error":
         await client.chat_postMessage(

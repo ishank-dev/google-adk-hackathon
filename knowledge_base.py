@@ -1,5 +1,5 @@
 from agents.slack_agent.utils.config import env_config
-from agents.multi_tool_agent_gemini.rag_kb_gemini import GeminiFAQSystem
+from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
 import json
 import os
 if __name__ == "__main__":
@@ -11,16 +11,6 @@ if __name__ == "__main__":
     
     # Initialize the FAQ system
     try:
-        faq_system = GeminiFAQSystem(
-            project_id=PROJECT_ID,
-            location=LOCATION,
-            service_account_path=SERVICE_ACCOUNT_PATH,
-            corpus_name="FAQ-Knowledge-Base",
-            gcs_bucket=env_config.google_storage_bucket,
-        )
-        
-        print("🎉 FAQ System initialized successfully!")
-        print("\n📚 Updating knowledge base...")
         if os.path.exists(KNOWLEDGE_BASE_PATH):
             stats = faq_system.update(KNOWLEDGE_BASE_PATH)
             print(f"Upload stats: {stats}")
