@@ -100,7 +100,7 @@ async def handle_app_mention(event, client):
     thread_ts = event.get("thread_ts")  # This will be present if in a thread
     message_ts = event.get("ts")
     
-    if "test" in text.lower():
+    if "testing_ella" in text.lower():
         await client.chat_postMessage(
             channel=channel_id,
             thread_ts=thread_ts or message_ts,
@@ -245,7 +245,7 @@ def _parse_add_doc_command(text: str, user_id: str) -> Dict:
             additional_context = additional_context.replace(category_match.group(0), '').strip()
         
         # Check for force flag
-        if re.search(r'\bforce\b', cleaned_text, re.IGNORECASE):
+        if re.search(r'--force\b', cleaned_text, re.IGNORECASE):
             force = True
             additional_context = re.sub(r'\bforce\b', '', additional_context, flags=re.IGNORECASE).strip()
         
@@ -507,6 +507,8 @@ async def process_and_respond(body, client):
         user_id=user_id,
         client=client
     )
+    
+    print(f"LLM answer: {llm_answer}")
     
     if llm_answer["status"] == "error":
         await client.chat_postMessage(
