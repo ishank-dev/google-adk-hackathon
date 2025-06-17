@@ -7,7 +7,7 @@ from . import rag_kb_gemini  # same-package import of your RAG module
 
 def chat_kb(question: str) -> dict:
     try:
-        answer = rag_kb_gemini.chat(question)
+        answer = rag_kb_gemini.faq_system.chat(question)
         return {"status": "success", "answer": answer}
     except Exception as exc:
         import traceback, sys

@@ -10,12 +10,13 @@ import vertexai
 from vertexai.generative_models import GenerativeModel
 from vertexai.preview import rag
 from vertexai.preview.rag import (
-    RagCorpus, RagFile, RagEmbeddingModelConfig, RagVectorDbConfig,
+    RagEmbeddingModelConfig, RagVectorDbConfig,
     VertexPredictionEndpoint
 )
 from google.oauth2 import service_account
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud import storage
+from agents.slack_agent.utils.config import env_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -499,14 +500,14 @@ class GeminiFAQSystem:
             conversation_history = []
         
         # For chat, we can include recent conversation context
-        chat_system_prompt = system_prompt or """You are a helpful AI assistant that answers questions based on provided knowledge base sources.
-
-Instructions:
-- Use the information from the knowledge base sources below
-- Consider the conversation history for context
-- Provide helpful, conversational responses
-- Cite sources using [Source X] format when referencing specific information
-- If you don't know something, say so clearly"""
+        chat_system_prompt = system_prompt or """
+        You are a helpful AI assistant that answers questions based on provided knowledge base sources.
+        Instructions:
+        - Use the information from the knowledge base sources below
+        - Consider the conversation history for context
+        - Provide helpful, conversational responses
+        - Cite sources using [Source X] format when referencing specific information
+        - If you don't know something, say so clearly"""
         
         # Generate answer
         answer = self.answer(question, chat_system_prompt)
@@ -580,3 +581,16 @@ Instructions:
         except Exception as e:
             logger.error(f"❌ Failed to delete corpus: {str(e)}")
             raise
+        
+PROJECT_ID = env_config.google_project_id
+LOCATION = env_config.google_location
+SERVICE_ACCOUNT_PATH = env_config.google_credentials_path
+KNOWLEDGE_BASE_PATH = "knowledge_base"
+
+faq_system = GeminiFAQSystem(
+            project_id=PROJECT_ID,
+            location=LOCATION,
+            service_account_path=SERVICE_ACCOUNT_PATH,
+            corpus_name="FAQ-Knowledge-Base",
+            gcs_bucket=env_config.google_storage_bucket,
+        )
