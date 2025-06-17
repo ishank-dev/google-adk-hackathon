@@ -1,16 +1,6 @@
 from typing import Dict, Optional
 from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
-import re
-# Fallback patterns for unknown answers
-FALLBACK_PATTERNS = [
-    r"an error occured",
-    r"i don'?t know",
-    r"i'?m not sure",
-    r"(could|can)('?t| not) find",
-    r"no relevant",
-    r"I couldn't find relevant information to answer your question",
-    r"I don't have information about this in my knowledge base"
-]
+
 
 async def find_or_create_faq_channel(client) -> str:
     """
@@ -44,7 +34,7 @@ async def get_answer(question: str, user_id: str, client) -> Dict[str, str]:
         (answer,_) = faq_system.chat(question)
         lower = answer.lower()
         # if fallback pattern matches, log to #faq
-        if any(re.search(p, lower) for p in FALLBACK_PATTERNS):
+        if "I couldn't find relevant information in our knowledge base" in answer:
             faq_ch = await find_or_create_faq_channel(client)
             await post_question_to_faq(client, faq_ch, question, user_id)
             return {

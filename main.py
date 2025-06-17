@@ -569,7 +569,7 @@ def _format_answer(answer: str, user_id: str, question: str, is_error: bool = Fa
     if is_error:
         return (
             f"{user_id} asked:\n> {question}\n\n"
-            f"Unfortunately, I couldn't find an answer for that. "
+            f"Unfortunately, I couldn't find an answer for that. Either the question is invalid, or the answer is not in our knowledge base.\n\n"
             "But I have posted your question in the #faq channel for others to help out!"
         )
     return (
