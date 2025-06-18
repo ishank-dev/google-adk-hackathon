@@ -92,7 +92,9 @@ async def handle_add_to_document(ack, body, respond):
 async def handle_app_mention(event, client):
     """
     Handle app mentions for adding documents from threads.
-    Format: @bot add_doc [title="..."] [category="..."] [force] <optional additional context>
+    Supports two formats:
+    1. @bot add_doc [title="..."] [category="..."] [force] <optional additional context>
+    2. @bot N (where N is the number of messages to save)
     """
     text = event.get("text", "").strip()
     user_id = event.get("user")
@@ -100,6 +102,12 @@ async def handle_app_mention(event, client):
     thread_ts = event.get("thread_ts")  # This will be present if in a thread
     message_ts = event.get("ts")
     
+    # Add initial reaction to acknowledge we received the command
+    await client.reactions_add(
+        channel=channel_id,
+        timestamp=message_ts,
+        name="hourglass_flowing_sand"
+    )
     if "testing_ella" in text.lower():
         await client.chat_postMessage(
             channel=channel_id,
@@ -115,42 +123,121 @@ async def handle_app_mention(event, client):
         return  # Not our command, let other handlers deal with it
     
     try:
-        # Add initial reaction to acknowledge we received the command
-        await client.reactions_add(
+        # Check if this is a number command
+        if _is_number_command(text):
+            count = _parse_number_command(text)
+            
+            # Get the last N messages
+            content = await get_last_n_messages(client, channel_id, thread_ts, count)
+            
+            # Add to knowledge base with default values
+            result = await add_to_document(
+                content=content,
+                title="Slack Thread",
+                category="general",
+                force_add=True,  # Skip relevance check for number-based saves
+                user_id=user_id,
+                context_info=f"Last {count} messages"
+            )
+            
+            # Remove hourglass reaction
+            try:
+                await client.reactions_remove(
+                    channel=channel_id,
+                    timestamp=message_ts,
+                    name="hourglass_flowing_sand"
+                )
+            except:
+                pass
+            
+            if result["status"] == "success":
+                await client.reactions_add(
+                    channel=channel_id,
+                    timestamp=message_ts,
+                    name="white_check_mark"
+                )
+                
+                await client.chat_postMessage(
+                    channel=channel_id,
+                    thread_ts=thread_ts or message_ts,
+                    text=f"✅ Saved last {count} messages to the knowledge base."
+                )
+            else:
+                await client.reactions_add(
+                    channel=channel_id,
+                    timestamp=message_ts,
+                    name="x"
+                )
+                
+                await client.chat_postMessage(
+                    channel=channel_id,
+                    thread_ts=thread_ts or message_ts,
+                    text=f":x: Error saving messages: {result.get('error', 'Unknown error occurred')}"
+                )
+            return
+        
+        # Check if this is an add_doc command
+        is_add_doc = _is_add_doc_command(text)
+        
+        if is_add_doc:
+            # Parse the command
+            parsed_command = _parse_add_doc_command(text, user_id)
+            
+            if parsed_command["error"]:
+                # Remove hourglass and add error reaction
+                await client.reactions_remove(
+                    channel=channel_id,
+                    timestamp=message_ts,
+                    name="hourglass_flowing_sand"
+                )
+                await client.reactions_add(
+                    channel=channel_id,
+                    timestamp=message_ts,
+                    name="warning"
+                )
+                
+                await client.chat_postMessage(
+                    channel=channel_id,
+                    thread_ts=thread_ts or message_ts,
+                    text=f":warning: {parsed_command['error']}\n\n"
+                         f"**Usage:** `@bot add_doc [title=\"...\"] [category=\"...\"] [force] <optional context>`\n"
+                         f"**Example:** `@bot add_doc title=\"Meeting Notes\" category=\"team_updates\" This thread discusses our new process`"
+                )
+                return
+            
+            # Process in background
+            asyncio.create_task(process_mention_document_addition(
+                client, channel_id, user_id, thread_ts, message_ts, parsed_command
+            ))
+            return
+            
+        # If we get here, check if it's a test message
+        if "test" in text.lower():
+            await client.chat_postMessage(
+                channel=channel_id,
+                thread_ts=thread_ts or message_ts,
+                text="🤖 I can hear you! App mentions are working."
+            )
+            return
+            
+        # If we get here, it's an unknown command
+        # Remove hourglass and add warning reaction
+        await client.reactions_remove(
             channel=channel_id,
             timestamp=message_ts,
             name="hourglass_flowing_sand"
         )
+        await client.reactions_add(
+            channel=channel_id,
+            timestamp=message_ts,
+            name="warning"
+        )
         
-        # Parse the command
-        parsed_command = _parse_add_doc_command(text, user_id)
-        
-        if parsed_command["error"]:
-            # Remove hourglass and add error reaction
-            await client.reactions_remove(
-                channel=channel_id,
-                timestamp=message_ts,
-                name="hourglass_flowing_sand"
-            )
-            await client.reactions_add(
-                channel=channel_id,
-                timestamp=message_ts,
-                name="warning"
-            )
-            
-            await client.chat_postMessage(
-                channel=channel_id,
-                thread_ts=thread_ts or message_ts,
-                text=f":warning: {parsed_command['error']}\n\n"
-                     f"**Usage:** `@bot add_doc [title=\"...\"] [category=\"...\"] [force] <optional context>`\n"
-                     f"**Example:** `@bot add_doc title=\"Meeting Notes\" category=\"team_updates\" This thread discusses our new process`"
-            )
-            return
-        
-        # Process in background
-        asyncio.create_task(process_mention_document_addition(
-            client, channel_id, user_id, thread_ts, message_ts, parsed_command
-        ))
+        await client.chat_postMessage(
+            channel=channel_id,
+            thread_ts=thread_ts or message_ts,
+            text=":warning: Unknown command. Use `@bot N` to save last N messages or `@bot add_doc` to add specific content."
+        )
         
     except Exception as e:
         # Remove hourglass and add error reaction
@@ -172,7 +259,7 @@ async def handle_app_mention(event, client):
         await client.chat_postMessage(
             channel=channel_id,
             thread_ts=thread_ts or message_ts,
-            text=f":x: Error processing add_doc command: {str(e)}"
+            text=f":x: Error processing command: {str(e)}"
         )
 
 
@@ -482,7 +569,7 @@ def _format_answer(answer: str, user_id: str, question: str, is_error: bool = Fa
     if is_error:
         return (
             f"{user_id} asked:\n> {question}\n\n"
-            f"Unfortunately, I couldn't find an answer for that. "
+            f"Unfortunately, I couldn't find an answer for that. Either the question is invalid, or the answer is not in our knowledge base.\n\n"
             "But I have posted your question in the #faq channel for others to help out!"
         )
     return (
@@ -631,6 +718,79 @@ async def get_message_context(client, channel_id, original_content, thread_ts=No
             "content": original_content,
             "info": f"Error getting thread context: {str(e)}"
         }
+
+
+def _is_number_command(text: str) -> bool:
+    """
+    Check if the mention text contains a number command.
+    Format: @bot N where N is a number
+    """
+    # Remove bot mention and normalize
+    cleaned_text = text.lower().strip()
+    
+    # Remove common bot mention patterns
+    import re
+    cleaned_text = re.sub(r'<@[uw][a-z0-9]+>', '', cleaned_text, flags=re.IGNORECASE).strip()
+    
+    # Check if it's just a number
+    return bool(re.match(r'^\d+$', cleaned_text))
+
+def _parse_number_command(text: str) -> int:
+    """
+    Parse the number command to extract the count.
+    Returns 5 as default if no valid number found.
+    """
+    import re
+    # Remove bot mention
+    cleaned_text = re.sub(r'<@[uw][a-z0-9]+>', '', text, flags=re.IGNORECASE).strip()
+    
+    # Extract number
+    match = re.search(r'\b(\d+)\b', cleaned_text)
+    return int(match.group(1)) if match else 5
+
+async def get_last_n_messages(client, channel_id, thread_ts, count: int):
+    """
+    Get the last N messages from a thread or channel.
+    """
+    try:
+        if thread_ts:
+            # Get messages from thread
+            response = await client.conversations_replies(
+                channel=channel_id,
+                ts=thread_ts,
+                limit=count + 1  # +1 to exclude the mention message
+            )
+            messages = response.get("messages", [])[1:]  # Exclude the mention message
+        else:
+            # Get messages from channel
+            response = await client.conversations_history(
+                channel=channel_id,
+                limit=count + 1  # +1 to exclude the mention message
+            )
+            messages = response.get("messages", [])[1:]  # Exclude the mention message
+        
+        # Format messages
+        formatted_messages = []
+        for msg in messages:
+            user_id = msg.get("user", "Unknown")
+            text = msg.get("text", "").strip()
+            
+            if not text:
+                continue
+                
+            # Get user info for better formatting
+            try:
+                user_info = await client.users_info(user=user_id)
+                username = user_info.get("user", {}).get("real_name") or user_info.get("user", {}).get("name") or f"User-{user_id}"
+            except:
+                username = f"User-{user_id}"
+            
+            formatted_messages.append(f"**{username}:** {text}")
+        
+        return "\n\n".join(formatted_messages)
+        
+    except Exception as e:
+        return f"Error retrieving messages: {str(e)}"
 
 
 @app.post("/slack/commands")
