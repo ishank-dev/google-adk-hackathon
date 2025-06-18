@@ -2,7 +2,7 @@
 from typing import Dict
 import uuid
 from datetime import datetime
-
+import json
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 
@@ -10,32 +10,35 @@ from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
 
 
 RELEVANCE_PROMPT = """
-You are an expert content curator for a knowledge base. Your task is to determine if the given content is relevant and valuable for a company's internal knowledge base.
+You are a content curator for a company knowledge base. Your goal is to be inclusive and helpful - if content could be useful to someone in the organization, it should generally be accepted.
 
-Consider the following criteria:
-1. **Informational Value**: Does it contain useful information for employees?
-2. **Relevance**: Is it related to work, processes, tools, or company knowledge?
-3. **Completeness**: Is the information complete enough to be useful?
-4. **Clarity**: Is the content clear and understandable?
-5. **Appropriateness**: Is it appropriate for a professional knowledge base?
+Evaluate content based on these criteria:
+1. **Could this help someone?** - Even niche technical docs, reference materials, or process notes can be valuable
+2. **Is it work-related?** - Broadly interpreted: tools, frameworks, configurations, troubleshooting, processes, etc.
+3. **Is it appropriate?** - Not spam, offensive, or completely personal content
+4. **Is it coherent?** - Readable and makes basic sense (doesn't need to be perfect)
 
-Content to evaluate:
-```
-{content}
-```
+**Default to ACCEPTING content unless it's clearly:**
+- Spam or gibberish
+- Inappropriate/offensive 
+- Completely personal/unrelated to work
+- Duplicate of existing content
 
+Content to evaluate: {content}
 Proposed title: {title}
 Proposed category: {category}
 
-Respond with a JSON object containing:
-- "relevant": true/false
-- "score": a number between 0-100 (higher = more relevant)
-- "reason": a brief explanation of your decision
-- "suggested_title": an improved title if needed
-- "suggested_category": an improved category if needed
+Respond with a JSON object:
+- "relevant": true/false (be generous - when in doubt, say true)
+- "score": 0-100 (aim for 60+ for most work-related content)
+- "reason": brief explanation
+- "suggested_title": improved title if needed (optional)
+- "suggested_category": improved category if needed (optional)
+
+Remember: It's better to have slightly irrelevant docs than to block genuinely useful information. Users can always clean up later.
 
 Example response:
-{{"relevant": true, "score": 85, "reason": "This content provides valuable process documentation that will help team members understand the deployment workflow.", "suggested_title": "Deployment Process Guide", "suggested_category": "processes"}}
+{{"relevant": true, "score": 75, "reason": "Technical configuration documentation - will be useful for developers working with similar setups", "suggested_title": "VPN Configuration Guide", "suggested_category": "infrastructure"}}
 """
 
 RELEVANCE_THRESHOLD = 60  # Minimum score to automatically accept content
@@ -53,10 +56,14 @@ async def check_content_relevance(content: str, title: str | None = None, catego
         )
 
         response = faq_system.llm(prompt, temperature=0.3)
-
-        import json
         try:
-            result = json.loads(response)
+            clean_response = response.strip()
+            if clean_response.startswith("```json"):
+                clean_response = clean_response.replace("```json", "").replace("```", "").strip()
+            elif clean_response.startswith("```"):
+                clean_response = clean_response.replace("```", "").strip()
+            
+            result = json.loads(clean_response)
             return {
                 "relevant": result.get("relevant", False),
                 "score": result.get("score", 0),

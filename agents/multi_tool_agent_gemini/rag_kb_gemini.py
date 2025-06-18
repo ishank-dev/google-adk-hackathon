@@ -35,22 +35,29 @@ base_system_prompt = """
 You are a helpful AI assistant that answers questions based on provided knowledge base sources.
 
 SAFETY GUIDELINES:
-- REFUSE to answer questions about dangerous, illegal, harmful, or inappropriate topics including but not limited to:
-  * Weapons, explosives, or violence
-  * Illegal activities or substances
-  * Self-harm or harm to others
-  * Hacking, fraud, or malicious activities
-  * Inappropriate content involving minors
-- If a question seems harmful, respond with: "I can't provide information on dangerous, illegal, or harmful topics."
+- REFUSE to answer questions that involve:
+  * Instructions for creating weapons, explosives, or dangerous devices
+  * Detailed methods for illegal activities (drug manufacturing, fraud schemes, etc.)
+  * Specific instructions for self-harm or harming others
+  * Malicious hacking techniques or exploit code
+  * Inappropriate sexual content involving minors
+- For factual, educational information about these topics (like historical context or general awareness), use your judgment
+- If you must refuse a question for safety reasons, respond with: "I can't provide information on this topic for safety reasons."
 
 ANSWERING GUIDELINES:
-- Use ONLY the information provided in the sources below
-- If the answer is not in the sources, clearly state "I don't have information about this in my knowledge base"
+- Prioritize information from the provided sources below
+- You may use basic reasoning and general knowledge to contextualize source information
+- If the specific answer is not available in the sources, state: "I don't have information about this in my knowledge base."
 - Be concise but comprehensive
 - Stay focused on the question asked
-- Be helpful and professional in tone
+- Maintain a helpful and professional tone
 
-Remember: Safety first, then accuracy based on provided sources."""
+ERROR HANDLING:
+- For any question where the knowledge base lacks sufficient information, mention: "I don't have information about this in my knowledge base."
+- For any question that you are not able to provide answer with other than the safety questions, mention: "I don't have enough information to answer this question."
+- No unanswered questions other than safety refusals should miss either of the above two statements.
+Remember: Prioritize safety, then provide accurate responses based on available sources while being transparent about limitations.
+"""
 
 class GeminiFAQSystem:
     """
@@ -734,70 +741,6 @@ class GeminiFAQSystem:
                 logger.error(f"Response body: {e.response.text}") # type: ignore
             return []
     
-    def _is_harmful_question(self, question: str) -> bool:
-        """
-        Check if a question contains harmful, dangerous, or inappropriate content.
-        
-        Args:
-            question: The user's question to evaluate
-            
-        Returns:
-            True if the question should be refused, False otherwise
-        """
-        question_lower = question.lower().strip()
-        
-        # Define harmful keywords and patterns
-        harmful_patterns = [
-            # Violence and weapons
-            "nuclear bomb", "atomic bomb", "make bomb", "build bomb", "explosive", 
-            "dynamite", "gunpowder", "weapon", "kill", "murder", "assassin",
-            "poison", "ricin", "anthrax", "biological weapon", "chemical weapon",
-            
-            # Illegal activities
-            "hack into", "break into", "steal", "fraud", "money laundering",
-            "identity theft", "credit card fraud", "illegal drugs", "drug dealer",
-            "counterfeit", "fake id", "fake passport",
-            
-            # Self-harm
-            "commit suicide", "kill myself", "end my life", "self harm",
-            "cut myself", "overdose",
-            
-            # Hacking and cybercrime
-            "ddos attack", "sql injection", "ransomware", "malware", "virus",
-            "crack password", "bypass security", "exploit vulnerability",
-            
-            # Inappropriate content
-            "child abuse", "illegal porn", "underage", "minor explicit",
-            
-            # Other dangerous activities
-            "meth lab", "grow marijuana", "distill alcohol illegally",
-            "tax evasion", "insider trading"
-        ]
-        
-        # Check for exact matches and partial matches
-        for pattern in harmful_patterns:
-            if pattern in question_lower:
-                logger.warning(f"🚨 Harmful content detected: '{pattern}' in question")
-                return True
-        
-        # Additional checks for variations and combinations
-        dangerous_combinations = [
-            ("make", "bomb"),
-            ("build", "explosive"),
-            ("create", "weapon"),
-            ("how to", "kill"),
-            ("steps to", "hack"),
-            ("guide to", "illegal"),
-            ("tutorial", "dangerous")
-        ]
-        
-        for word1, word2 in dangerous_combinations:
-            if word1 in question_lower and word2 in question_lower:
-                logger.warning(f"🚨 Dangerous combination detected: '{word1}' + '{word2}' in question")
-                return True
-        
-        return False
-    
     def answer(self, 
                question: str,
                system_prompt: Optional[str] = None,
@@ -818,22 +761,17 @@ class GeminiFAQSystem:
             Generated answer
         """
         try:
-            # Check for harmful/inappropriate content first
-            if self._is_harmful_question(question):
-                return "I can't provide information on dangerous, illegal, or harmful topics. Please ask about something else I can help you with."
-            
             # Retrieve relevant contexts
             contexts = self._retrieve_contexts(question, max_contexts)
             
             if not contexts:
                 if enable_fallback:
                     # Use fallback system without knowledge base context
-                    fallback_prompt = """You are a helpful AI assistant. Answer the user's question to the best of your ability, but be honest about the limitations of your knowledge. If the question involves dangerous, illegal, or harmful content, politely decline to answer.
-
-Question: {question}
-
-Answer:"""
-                    
+                    fallback_prompt = """
+                    You are a helpful AI assistant. Answer the user's question to the best of your ability, but be honest about the limitations of your knowledge. If the question involves dangerous, illegal, or harmful content, politely decline to answer.
+                        Question: {question}
+                        Answer:
+                    """
                     model = GenerativeModel("gemini-2.0-flash-001")
                     response = model.generate_content(
                         fallback_prompt.format(question=question),
@@ -844,7 +782,7 @@ Answer:"""
                             "max_output_tokens": 1024,
                         }
                     )
-                    return f"I couldn't find relevant information in our knowledge base to answer your question. Here's what I can tell you based on my general knowledge:\n\n{response.text}"
+                    return f"I couldn't find relevant information in our knowledge base to answer your question. Here's what I can tell you based on my general knowledge: {response.text}. Additionally, I have raised this in #faq for others to answer as well."
                 else:
                     return "I couldn't find relevant information to answer your question. Please try rephrasing or check if the knowledge base contains information about this topic."
             

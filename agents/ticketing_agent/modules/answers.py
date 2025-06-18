@@ -1,15 +1,11 @@
 from typing import Dict, Optional
 from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
-import re
-# Fallback patterns for unknown answers
-FALLBACK_PATTERNS = [
-    r"an error occured",
-    r"i don'?t know",
-    r"i'?m not sure",
-    r"(could|can)('?t| not) find",
-    r"no relevant",
-    r"I couldn't find relevant information to answer your question",
-    r"I don't have information about this in my knowledge base"
+
+
+unanswered_questions = [
+    "I don't have information about this in my knowledge base.",
+    "I don't have enough information to answer this question.",
+    "I couldn't find relevant information in our knowledge base to answer your question"
 ]
 
 async def find_or_create_faq_channel(client) -> str:
@@ -41,10 +37,13 @@ async def get_answer(question: str, user_id: str, client) -> Dict[str, str]:
     Query the LLM and fall back to posting in #faq if needed.
     """
     try:
-        (answer,_) = faq_system.chat(question)
-        lower = answer.lower()
-        # if fallback pattern matches, log to #faq
-        if any(re.search(p, lower) for p in FALLBACK_PATTERNS):
+        enable_fallback = True
+        if "--strict" in question:
+            enable_fallback = False
+            question = question.replace("--strict", "").strip()
+        (answer,_) = faq_system.chat(question, enable_fallback = enable_fallback)
+        unanswered_question = any(q in answer for q in unanswered_questions)
+        if unanswered_question:
             faq_ch = await find_or_create_faq_channel(client)
             await post_question_to_faq(client, faq_ch, question, user_id)
             return {
