@@ -540,11 +540,23 @@ async def get_thread_context_for_mention(client, channel_id, thread_ts, addition
 @slack_bolt_app.command("/document_stats")
 async def handle_document_stats(ack, body, respond):
     """
-    Show statistics about the knowledge base.
+    Show statistics about the knowledge base (private responses only).
     """
     await ack()
     
+    # First private response
+    await respond(":hourglass: Gathering knowledge base statistics...", response_type="ephemeral")
+    
+    # Background processing with private follow-up
+    asyncio.create_task(fetch_and_send_stats_private(respond))
+
+
+async def fetch_and_send_stats_private(respond):
+    """
+    Background task that uses the original respond function (always private).
+    """
     try:
+        # This can take as long as needed
         stats = get_document_stats()
         
         if "error" in stats:
@@ -559,6 +571,7 @@ async def handle_document_stats(ack, body, respond):
     except Exception as e:
         message = f":x: Error retrieving document statistics: {str(e)}"
     
+    # This will ALWAYS be private since it uses the original respond function
     await respond(message, response_type="ephemeral")
 
 

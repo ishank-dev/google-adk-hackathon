@@ -250,12 +250,52 @@ def get_document_stats() -> Dict:
                 "error": corpus_info["error"]
             }
         
-        # For more detailed stats, we could enhance this by parsing file metadata
+        # Initialize document types counter
+        document_types = {}
+        
+        # Try to get document type information from GCS metadata
+        try:
+            if faq_system.storage_client:
+                bucket = faq_system.storage_client.bucket(faq_system.storage_bucket)
+                blobs = bucket.list_blobs(prefix=f"{faq_system.corpus_name}/documents/")
+                
+                for blob in blobs:
+                    try:
+                        blob.reload()
+                        if blob.metadata and "doc_type" in blob.metadata:
+                            doc_type = blob.metadata["doc_type"]
+                        elif blob.metadata and "custom_doc_type" in blob.metadata:
+                            doc_type = blob.metadata["custom_doc_type"]
+                        else:
+                            # Fallback: try to infer from filename
+                            filename = blob.name.split("/")[-1]
+                            if filename.endswith(".txt"):
+                                doc_type = "text"
+                            elif filename.endswith(".md"):
+                                doc_type = "markdown"
+                            else:
+                                doc_type = "general"
+                        
+                        document_types[doc_type] = document_types.get(doc_type, 0) + 1
+                        
+                    except Exception as e:
+                        # If we can't get metadata for a specific blob, count it as "unknown"
+                        document_types["unknown"] = document_types.get("unknown", 0) + 1
+                        
+        except Exception as e:
+            # If we can't access GCS metadata, provide basic type info
+            document_types = {"general": corpus_info["total_files"]}
+        
+        # If no documents found, provide empty types
+        if not document_types:
+            document_types = {"No documents": 0}
+        
         return {
             "total_documents": corpus_info["total_files"],
             "corpus_name": corpus_info["corpus_name"],
             "file_names": corpus_info["file_names"][:10],  # Show first 10 files
-            "total_file_count": len(corpus_info["file_names"])
+            "total_file_count": len(corpus_info["file_names"]),
+            "document_types": document_types  # This was missing!
         }
         
     except Exception as e:

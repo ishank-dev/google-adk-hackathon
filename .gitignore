@@ -18,3 +18,4 @@ gcp_creds.json
 venv/*
 .venv/*
 vector_db_llama/*
+secret.py
