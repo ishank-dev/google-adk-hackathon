@@ -522,4 +522,189 @@ Integration issues are tracked in Jira under the “FE-BE Sync” epic. We also 
 ---
 ---
 
+# Rich Internal Conversations Knowledge Base
+
+Conversations are grouped by relevant Slack channels. Each block represents a complete Q&A exchange between an employee (Anonymous) and an internal expert. Use them for retrieval‑augmented generation.
+
+---
+
+#finance-help
+Anonymous: What’s the formula we use to calculate Net Dollar Retention?
+Leila-FP&A: Net Dollar Retention = (Recurring Revenue from current customers this quarter ÷ Recurring Revenue from the same cohort last year) × 100. We exclude churned customers by ID and include upsells tagged “UP”.
+
+---
+
+#finance-help
+Anonymous: Where can I find the monthly burn multiple dashboard?
+Leila-FP&A: It’s in Looker → Finance / Burn Analysis / “Burn Multiple – Board View”. Source sheet is gs://fin-metrics/burn_multiple_raw.parquet.
+
+---
+
+#product-analytics
+Anonymous: Which table stores daily active users segmented by feature flag?
+Sasha-Data: Use analytics.dau_by_featureflag_daily. It joins to dim_feature_flag on flag_id.
+
+---
+
+#product-ops
+Anonymous: How do I enable the “dark_mode_beta” flag for customer ABC?
+Vik-ProdOps: Go to LaunchDarkly → Projects / WebApp / Flags / dark_mode_beta. Under “Targeting”, add account_id = 38177. Save and wait ~2 min for cache propagation.
+
+---
+
+#dev-support
+Anonymous: Yarn install fails with “ETIMEDOUT registry.corp.local”.
+Arjun-Platform: Set npm config registry to https://registry.corp.local and export HTTP_PROXY=http://proxy.internal:3128. Then rerun yarn install.
+
+---
+
+#dev-support
+Anonymous: Where’s the Helm chart for the griffin-worker microservice?
+Arjun-Platform: charts/griffin/ in the ops-helm repo. Version is pinned at 1.7.2 in deploy/griffin/values-prod.yaml.
+
+---
+
+#sre-alerts
+Anonymous: Grafana is alerting “High queue depth” for merlin-db. Next step?
+Dana-SRE: Connect to merlin-db-primary and run `show full processlist;` to spot long‑running queries. If queue depth > 500 for >5 min, fail over using `clusterctl switchover merlin`.
+
+---
+
+#observability
+Anonymous: Loki log query for service payments-api timing out, any optimizations?
+Dana-SRE: Add `| json | line_format "{{.request_id}} {{.duration_ms}}"` and set `limit=5000`. Also use `payment_service` label rather than wildcard.
+
+---
+
+#legal
+Anonymous: Who approves trademark usage in conference talks?
+Aisha-Legal: Send deck to legal-trademarks@company.net at least 5 business days before the event. I’ll review and return a signed approval PDF.
+
+---
+
+#marketing
+Anonymous: What’s the internal code name for the upcoming billing revamp?
+Eddie-Marketing: “Project Zephyr”. Public name TBD; keep internal until launch date in October.
+
+---
+
+#marketing
+Anonymous: Our homepage claims “Servers launch in <1 s”. Where’s the benchmark data?
+Eddie-Marketing: Results in Confluence page “Launch Speed Benchmarks 2025‑03”. Raw measurements in s3://benchmarks/launch_local_cluster_2025_03.csv.
+
+---
+
+#design-system
+Anonymous: Where is the latest Figma library for UI components?
+Lara-Design: Figma → Team “Design‑System” → File “DS‑Library 2.1”. Components are published; run “Update library” in your file.
+
+---
+
+#hr-people
+Anonymous: How do I record overseas work days for tax reporting?
+Maya-HR: In Workday, choose “International Remote Work” as time type, then specify country and dates. HR auto‑generates a tax packet after 30 days cumulative.
+
+---
+
+#hr-people
+Anonymous: Emergency PTO request protocol?
+Maya-HR: DM your manager and CC hr-people@company.net. HR will retroactively approve PTO in Workday.
+
+---
+
+#security
+Anonymous: How do I request a temporary AWS IAM role with S3 write access?
+Noah-SecOps: Open AccessHub → “New Privileged Role”. Select role template `s3_write_temp`. Maximum duration 4 h, requires manager approval.
+
+---
+
+#security
+Anonymous: What’s the process for reporting a potential phishing email?
+Noah-SecOps: Forward the email as attachment to phish@company.net. Security will analyze and update the threat feed.
+
+---
+
+#data-governance
+Anonymous: Retention period for event logs in eventstore.raw_events?
+Ola-DataGov: Raw events are retained 180 days. Aggregated events in analytics.* are retained 3 years.
+
+---
+
+#data-governance
+Anonymous: How do I request a new GDPR data‑subject export?
+Ola-DataGov: Submit a JIRA ticket in project “DPR” with customer_id. Exports run nightly at 02:00 UTC and drop ZIP files in s3://gdpr-exports/<ticket-id>/
+
+---
+
+#dev-environment
+Anonymous: First‑time setup for monorepo on Apple M4 chips?
+Zara-DevXP: Use setup‑m4.sh in repo root. It installs Homebrew, Volta, and Rosetta, then runs `npm run bootstrap`.
+
+---
+
+#dev-environment
+Anonymous: What’s the VPN config profile name for development cluster?
+Zara-DevXP: “Corp‑Dev‑VPN‑v2”. Download from Okta → “VPN Profiles”.
+
+---
+
+#sales-ops
+Anonymous: SQL to pull renewal pipeline for Q3?
+Tom-SalesOps: ```sql
+SELECT opp_id, account_name, arr, stage
+FROM crm.snapshot_renewals
+WHERE close_quarter = '2025Q3'
+  AND stage IN ('Commit', 'Best Case');
+```
+
+---
+
+#cust-success
+Anonymous: Where do we track Net Promoter Score responses?
+Ivy-CS: Table cs.nps_responses. Dashboard in Mode → “Customer Health / NPS Trend”.
+
+---
+
+#support
+Anonymous: How do I restart the recommendation-engine without downtime?
+Jules-Support: Use `deployctl rollout recommender --strategy=canary --steps=2`. Canary lasts 15 min before full rollout.
+
+---
+
+#support
+Anonymous: Location of client-side error logs for the iOS app?
+Jules-Support: Logs are posted to Crashlytics; raw JSON export is in BigQuery dataset mobile_crashlytics. Use table ios_crashes_daily.
+
+---
+
+#mobile-dev
+Anonymous: How do I bump the iOS version code automatically during CI?
+Elena-Mobile: Set `AUTO_INCREMENT_BUILD_NUMBER=true` in CircleCI env vars. fastlane’s `increment_build_number` picks it up.
+
+---
+
+#mobile-dev
+Anonymous: TestFlight invite quota exceeded. Can we reset?
+Elena-Mobile: Remove stale tester groups in App Store Connect → TestFlight → Groups. Each deletion frees slots instantly.
+
+---
+
+#ai-research
+Anonymous: Where are the latest fine‑tuned Llama-2 checkpoints?
+Rahul-ML: Check s3://ml-models/llama2-finetune/2025‑06‑02/. Each folder has config.json and adapter weights.
+
+---
+
+#ai-research
+Anonymous: How do I request a new GPU pod in the research cluster?
+Rahul-ML: Submit run spec in Pachyderm UI. Choose pool “gpu-a100” and set time limit. Default quota is 24 h; extensions via #ml-platform.
+
+---
+
+#legal
+Anonymous: NDA template for academic partners?
+Aisha-Legal: Legal drive → Templates → “Mutual NDA Academic v4.docx”.
+
+---
+
 
