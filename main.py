@@ -6,10 +6,10 @@ import uvicorn
 import asyncio, shlex, argparse
 from fastapi import Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
-from agents.ticketing_agent.agent import app as slack_bolt_app
+from agents.document_agent.utils.slack_app import app as slack_bolt_app
 from google.adk.cli.fast_api import get_fast_api_app
-from agents.ticketing_agent.modules.answers import get_answer
-from agents.ticketing_agent.modules.qna_utils import add_to_document, get_document_stats
+from modules.answers import get_answer
+from modules.qna_utils import add_to_document, get_document_stats
 
 app = get_fast_api_app(
     agents_dir="agents",    # where your `root_agent` modules live
@@ -115,12 +115,6 @@ async def handle_app_mention(event, client):
             text="🤖 I can hear you! App mentions are working."
         )
         return
-    
-    # Check if this is an add_doc command
-    is_add_doc = _is_add_doc_command(text)
-    
-    if not is_add_doc:
-        return  # Not our command, let other handlers deal with it
     
     try:
         # Check if this is a number command
