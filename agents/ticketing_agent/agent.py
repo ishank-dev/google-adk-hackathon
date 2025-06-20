@@ -7,8 +7,8 @@ from google.adk.sessions import InMemorySessionService
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.genai import types
-from agents.slack_agent.utils.llm import llm
-from agents.slack_agent.utils.slack_app import (
+from agents.messaging_agent.utils.llm import llm
+from agents.messaging_agent.utils.slack_app import (
     app,
     get_or_create_session,
     delete_messages,
@@ -31,7 +31,7 @@ async def get_answer_tool(question: str) -> Dict[str, str]:
 
 # Build the ADK agent
 root_agent = Agent(
-    name="slack_agent",
+    name="messaging_agent",
     model="gemini-2.0-flash",
     instruction="Use get_answer_tool to answer Slack user questions; do not hallucinate.",
     description="Slack Q&A Bot",
@@ -42,7 +42,7 @@ root_agent = Agent(
 runner = Runner(
     agent=root_agent,
     session_service=session_service,
-    app_name="slack_agent",
+    app_name="messaging_agent",
 )
 
 # Helper to run agent in thread pool

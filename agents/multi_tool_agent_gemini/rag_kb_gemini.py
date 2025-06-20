@@ -17,7 +17,7 @@ from vertexai.preview.rag import (
 from google.oauth2 import service_account
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud import storage
-from agents.slack_agent.utils.config import env_config
+from agents.messaging_agent.utils.config import env_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
