@@ -6,7 +6,7 @@ import json
 from langchain.schema import Document
 from langchain.text_splitter import CharacterTextSplitter
 
-from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
+from agents.qna_agent.rag_kb_gemini import faq_system
 
 
 RELEVANCE_PROMPT = """

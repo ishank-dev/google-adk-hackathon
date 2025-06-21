@@ -16,7 +16,7 @@ def chat_kb(question: str) -> dict:
 
 
 root_agent = Agent(
-    name="md_rag_agent",
+    name="qna_agent",
     model="gemini-2.0-flash",
     description="Answers strictly from the Markdown knowledge base.",
     instruction=(
@@ -24,6 +24,7 @@ root_agent = Agent(
         "  1. Call chat_kb(question=<entire user message>).\n"
         "  2. If status=='success', reply ONLY with the 'answer' text.\n"
         "  3. If status=='error', apologise and show the error message.\n"
+        "  4. If for some reason you cannot answer, encourage the user to ask in slack forum and add the documents using document agent."
         "Do not reply in any other format."
     ),
     tools=[chat_kb],

@@ -1,5 +1,5 @@
 from agents.document_agent.utils.config import env_config
-from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
+from agents.qna_agent.rag_kb_gemini import faq_system
 import json
 import os
 if __name__ == "__main__":

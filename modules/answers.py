@@ -1,5 +1,5 @@
 from typing import Dict, Optional
-from agents.multi_tool_agent_gemini.rag_kb_gemini import faq_system
+from agents.qna_agent.rag_kb_gemini import faq_system
 
 
 unanswered_questions = [
