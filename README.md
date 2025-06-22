@@ -48,9 +48,9 @@ Agent Level Workflow
 | **Stage 3: Help is saved to knowledge base**<br>![Demo 3](https://github.com/user-attachments/assets/b757d16d-54f5-4a9f-8a60-669cf6ebeb71) <br> |        **Stage 4: Repeated question auto answered**<br>![Demo 4](https://github.com/user-attachments/assets/80332381-f490-482c-9ce0-cddbe0513066)        |
 
 Note: Our architecture currently supports slack for demo, and teams using different chat platforms can directly use google-adk default interface without any issues!
+## Running Locally
+- Please refer to the [guide](https://github.com/ishank-dev/google-adk-hackathon/blob/main/local_setup.md).
 
 ## Contributing
-
 Pull requests are welcome! 🌟
-
 © 2025 Ella | All Rights Reserved
