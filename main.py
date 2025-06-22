@@ -22,14 +22,13 @@ slack_handler = AsyncSlackRequestHandler(slack_bolt_app)
 @slack_bolt_app.command("/ask_ella")
 async def handle_ask_ella(ack, body, respond):
     text = body.get("text", "")
-    # Allow flag anywhere using argparse
-    parser = argparse.ArgumentParser(prog="/ask_ella", add_help=False)
-    parser.add_argument("-a", "--anonymous", action="store_true")
-    parser.add_argument("question", nargs="*")
 
     try:
-        args = parser.parse_args(shlex.split(text))
-        question = " ".join(args.question).strip()
+        tokens = text.split()
+        parser = argparse.ArgumentParser(prog="/ask_ella", add_help=False)
+        parser.add_argument("-a", "--anonymous", action="store_true")
+        args, remainder = parser.parse_known_args(tokens)
+        question = " ".join(remainder).strip()
         if not question:
             raise ValueError("No question provided.")
     except Exception:
