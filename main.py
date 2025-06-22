@@ -6,7 +6,7 @@ import uvicorn
 import asyncio, shlex, argparse
 from fastapi import Request
 from slack_bolt.adapter.fastapi.async_handler import AsyncSlackRequestHandler
-from agents.document_agent.utils.slack_app import app as slack_bolt_app
+from utils.slack_app import app as slack_bolt_app
 from google.adk.cli.fast_api import get_fast_api_app
 from modules.answers import get_answer
 from modules.qna_utils import add_to_document, get_document_stats

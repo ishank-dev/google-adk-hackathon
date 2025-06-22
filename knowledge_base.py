@@ -1,4 +1,4 @@
-from agents.document_agent.utils.config import env_config
+from utils.config import env_config
 from agents.qna_agent.rag_kb_gemini import faq_system
 import json
 import os
