@@ -253,22 +253,6 @@ Enable `logging.DEBUG` to see raw API payloads and similarity scores.
 
 ---
 
-## 8. Security & Governance
-
-- All uploads stored under `gs://{GOOGLE_STORAGE_BUCKET}/{corpus}/documents/`
-- File metadata records uploader (`user_id`) and timestamp for audit
-- Safety prompts enforced at answer‑time; dangerous requests are refused
-
----
-
-## 9. Versioning & Roll‑Back
-
-- Corpus files are immutable; updates create new timestamped objects
-- Hash‑based deduplication prevents accidental overwrite
-- To purge everything, call `clear_knowledge_base()` (admin‑only)
-
----
-
 ## 10. Quick Start
 
 ```bash
