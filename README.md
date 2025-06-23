@@ -16,8 +16,8 @@ Ella is an AI agent that helps you automatically transforms your team’s resolv
 - https://www.youtube.com/watch?v=dxeVhAzYlFI
 
 ## Bonus Points Blog & Podcast
-- Medium Blog: https://medium.com/@shivanikotian18/5a41cabbef40
-- [▶️ Listen to podcast](https://drive.google.com/file/d/1qogLpLd1ro4VDtnA-lcm8V3vfcf6lrz7/view?usp=sharing)  (Note: This is created using NotebookLM)
+- #### Medium Blog: https://medium.com/@shivanikotian18/5a41cabbef40
+- #### ▶️ Listen to podcast [![Play on SoundCloud](https://img.shields.io/badge/Listen-SoundCloud-orange?logo=soundcloud)](https://on.soundcloud.com/ZKu8XMZeD41IdOX8jL)
 
 ## How It Works
 
@@ -48,7 +48,7 @@ Agent Level Workflow
 
 Note: Our architecture currently supports slack for demo, and teams using different chat platforms can directly use google-adk default interface without any issues!
 ## Running Locally
-- Please refer to the [guide](https://github.com/ishank-dev/google-adk-hackathon/blob/main/local_setup.md).
+- [Link to Guide](https://github.com/ishank-dev/google-adk-hackathon/blob/main/local_setup.md)
 
 ## Contributing
 Pull requests are welcome! 🌟
