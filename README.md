@@ -13,12 +13,11 @@ Ella is an AI agent that helps you automatically transforms your team’s resolv
 - https://google-adk-hackathon-demo.my.canva.site/
 
 ## Watch the Demo Pitch here:
-
 - https://www.youtube.com/watch?v=dxeVhAzYlFI
 
-## Alternatively Try the Live Demo:
-
-- http://34.172.141.166:8000/dev-ui/
+## Bonus Points Blog & Podcast
+- Medium Blog: https://medium.com/@shivanikotian18/5a41cabbef40
+- [▶️ Listen to podcast](https://drive.google.com/file/d/1qogLpLd1ro4VDtnA-lcm8V3vfcf6lrz7/view?usp=sharing)  (Note: This is created using NotebookLM)
 
 ## How It Works
 
