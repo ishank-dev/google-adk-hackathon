@@ -43,7 +43,7 @@ Agent Level Workflow
 
 |                                                                     Stage 1                                                                     |                                                                         Stage 2                                                                          |
 | :---------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   **Ask Ella → instant reply from knowledge base**![Screen Recording 2025-06-22 at 7 13 58 PM](https://github.com/user-attachments/assets/f8e601e6-bf40-45f5-a074-93a6f679afc3)   | **Agent sending unknown question → #faq**![FAQ Crop GIF from ezgif (1)](https://github.com/user-attachments/assets/4a48e900-a6ee-4e74-9d60-fbb0a7dbdea1) |
+|   **Ask Ella → instant reply from knowledge base**![Screen Recording Jun 22 2025 Crop](https://github.com/user-attachments/assets/3e010b6f-a945-4620-a0ac-ed175d942592)   | **Agent sending unknown question → #faq**![FAQ Crop GIF from ezgif (1)](https://github.com/user-attachments/assets/4a48e900-a6ee-4e74-9d60-fbb0a7dbdea1) |
 | **Stage 3: Help is saved to knowledge base**<br>![Demo 3](https://github.com/user-attachments/assets/b757d16d-54f5-4a9f-8a60-669cf6ebeb71) <br> |        **Stage 4: Repeated question auto answered**<br>![Demo 4](https://github.com/user-attachments/assets/80332381-f490-482c-9ce0-cddbe0513066)        |
 
 Note: Our architecture currently supports slack for demo, and teams using different chat platforms can directly use google-adk default interface without any issues!
