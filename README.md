@@ -12,6 +12,15 @@ Ella is an AI agent that helps you automatically transforms your team’s resolv
 
 - https://google-adk-hackathon-demo.my.canva.site/
 
+### Demo GIF with a slack app integration
+
+|                                                                     Stage 1                                                                     |                                                                         Stage 2                                                                          |
+| :---------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   **Ask Ella → instant reply from knowledge base**![Screen Recording Jun 22 2025 Crop](https://github.com/user-attachments/assets/3e010b6f-a945-4620-a0ac-ed175d942592)   | **Agent sending unknown question → #faq**![FAQ Crop GIF from ezgif (1)](https://github.com/user-attachments/assets/4a48e900-a6ee-4e74-9d60-fbb0a7dbdea1) |
+| **Stage 3: Help is saved to knowledge base**<br>![Demo 3](https://github.com/user-attachments/assets/b757d16d-54f5-4a9f-8a60-669cf6ebeb71) <br> |        **Stage 4: Repeated question auto answered**<br>![Demo 4](https://github.com/user-attachments/assets/80332381-f490-482c-9ce0-cddbe0513066)        |
+
+Note: Our architecture currently supports slack for demo, and teams using different chat platforms can directly use google-adk default interface without any issues!
+
 ## Watch the Demo Pitch here:
 - https://www.youtube.com/watch?v=dxeVhAzYlFI
 
@@ -38,15 +47,6 @@ Agent Level Workflow
 - Vertex AI pulls relevant documents from a Cloud Storage corpus, combines them with the LLM, and returns an answer.
 - FastAPI delivers Ella’s reply back.
 - If the user (or teammate) runs `/add_doc`, the **Write & Curate Agent** stores the new document in Cloud Storage, expanding the corpus that RAG searches next time.
-
-### Demo GIF with a chat app integration
-
-|                                                                     Stage 1                                                                     |                                                                         Stage 2                                                                          |
-| :---------------------------------------------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   **Ask Ella → instant reply from knowledge base**![Screen Recording Jun 22 2025 Crop](https://github.com/user-attachments/assets/3e010b6f-a945-4620-a0ac-ed175d942592)   | **Agent sending unknown question → #faq**![FAQ Crop GIF from ezgif (1)](https://github.com/user-attachments/assets/4a48e900-a6ee-4e74-9d60-fbb0a7dbdea1) |
-| **Stage 3: Help is saved to knowledge base**<br>![Demo 3](https://github.com/user-attachments/assets/b757d16d-54f5-4a9f-8a60-669cf6ebeb71) <br> |        **Stage 4: Repeated question auto answered**<br>![Demo 4](https://github.com/user-attachments/assets/80332381-f490-482c-9ce0-cddbe0513066)        |
-
-Note: Our architecture currently supports slack for demo, and teams using different chat platforms can directly use google-adk default interface without any issues!
 ## Running Locally
 - [Link to Guide](https://github.com/ishank-dev/google-adk-hackathon/blob/main/local_setup.md)
 
