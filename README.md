@@ -1,3 +1,4 @@
+Note : This codebase is no longer maintained, checkout new updates [here](https://github.com/ishank-dev/AI-Agents/tree/main/Ella%20-%20Knowledge%20Transfer) 
 # Ella (Effortless Learning & Lookup Assistant)
 
 Ella is an AI agent that helps you automatically transforms your team’s resolved chat threads into a living FAQ document so no question has to be answered twice.
